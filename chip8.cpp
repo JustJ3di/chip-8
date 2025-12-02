@@ -118,29 +118,39 @@ void chip8::handle_category_8(uint16_t opc)
         case 0x3: // 8XY3: XOR Vx, Vy
             V[X] ^= V[Y];
             break;
-        case 0x4: // 8XY4: ADD Vx, Vy (con gestione overflow/carry in VF)
-            u_int16_t sum = V[X] + V[Y]; // Usa u_int16_t per catturare l'overflow
-            if (sum > 255) {
-                V[F] = 1; // Flag settato a 1 (Overflow)
-            } else {
-                V[F] = 0; // Flag a 0
+        case 0x4: {
+            u_int16_t sum = V[X] + V[Y]; 
+                if (sum > 255) {
+                    V[F] = 1; // Overflow
+                } else {
+                    V[F] = 0; 
+                }
+                V[X] = sum & 0xFF; //trunked
             }
-            V[X] = sum & 0xFF; //trunked
             break;
-        case 0x5:
-            if (V[X] >= V[Y]) {
-                    V[0xF] = 1; // No Borrow
-            } else {
-                V[0xF] = 0; // Borrow
+        case 0x5:{
+                if (V[X] >= V[Y]) {
+                        V[0xF] = 1; // No Borrow
+                } else {
+                    V[0xF] = 0; // Borrow
+                }
+                V[X] = V[X] - V[Y];
             }
-            V[X] = V[X] - V[Y];
             break;
         case 0x6: 
             V[0xF] = V[X] & 0x1; 
             V[X] >>= 1;
             break;
-        case 0x7:
+        case 0x7://dual of 0x6
+        {
+            if (V[Y] >= V[X]) {
+                V[0xF] = 1; // No Borrow
+            } else {
+                V[0xF] = 0; // Borrow
+            }
+            V[X] = V[Y] - V[X]; 
             break;
+        }
         case 0x8:
         break;
         case 0x9:
