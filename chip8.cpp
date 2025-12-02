@@ -99,6 +99,7 @@ void chip8::handle_category_8(uint16_t opc)
         // Estrai i parametri comuni
     u_int8_t X = (opc >> 8) & 0xF; // Registro di destinazione/sorgente Vx
     u_int8_t Y = (opc >> 4) & 0xF; // Registro di sorgente Vy
+    uint8_t F = 15;
 
     // Estrai la SOTTOCLASSE (l'ultimo nibble N)
     u_int8_t sub_opcode = opc & 0xF; 
@@ -120,12 +121,31 @@ void chip8::handle_category_8(uint16_t opc)
         case 0x4: // 8XY4: ADD Vx, Vy (con gestione overflow/carry in VF)
             u_int16_t sum = V[X] + V[Y]; // Usa u_int16_t per catturare l'overflow
             if (sum > 255) {
-                V[0xF] = 1; // Flag settato a 1 (Overflow)
+                V[F] = 1; // Flag settato a 1 (Overflow)
             } else {
-                V[0xF] = 0; // Flag a 0
+                V[F] = 0; // Flag a 0
             }
-            V[X] = sum & 0xFF; // V[3] ora è 24
+            V[X] = sum & 0xFF; //trunked
             break;
+        case 0x5:
+            if (V[X] >= V[Y]) {
+                    V[0xF] = 1; // No Borrow
+            } else {
+                V[0xF] = 0; // Borrow
+            }
+            V[X] = V[X] - V[Y];
+            break;
+        case 0x6: 
+            V[0xF] = V[X] & 0x1; 
+            V[X] >>= 1;
+            break;
+        case 0x7:
+            break;
+        case 0x8:
+        break;
+        case 0x9:
+        break;
+    
         // ... (tutti gli altri opcode 8XYN: SUB, SHR, SUBN, SHL)
         default:
             // Gestione di opcode non validi (opzionale)
