@@ -64,7 +64,7 @@ private:
     void handle_category_0(uint16_t opc);
     void op_1NNN_JP(uint16_t opc);
     void op_2NNN_CALL(u_int16_t opc);
-
+    void op_3XKK_SE(uint16_t opc);
 
 public:
 
