@@ -5,6 +5,10 @@
 #include <string>
 #include <cstring>
 #include <array>
+#include <cstdlib> 
+#include <ctime>
+#include <random>
+#include <SDL2/SDL.h>
 
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
