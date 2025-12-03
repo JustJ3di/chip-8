@@ -87,7 +87,7 @@ public:
 
 
     chip8();
-    ~chip8();
+    ~chip8() = default;
 
     bool load(std::string);
     void emulate_cycle(); //fetch decode execute

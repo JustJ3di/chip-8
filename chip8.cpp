@@ -20,105 +20,43 @@ chip8::chip8()
 
     operations[0x1] = std::bind(&chip8::op_1NNN_JP, this, std::placeholders::_1); 
     
-    // Categoria 2: CALL addr (Chiamata a sottoprogramma) - Opcode semplice
     operations[0x2] = std::bind(&chip8::op_2NNN_CALL, this, std::placeholders::_1);
     
-    // Categoria 3: SE Vx, byte (Salto se uguale) - Opcode semplice
     operations[0x3] = std::bind(&chip8::op_3XKK_SE, this, std::placeholders::_1);
-    
-    // Categoria 4: SNE Vx, byte (Salto se NON uguale) - Opcode semplice
+
     operations[0x4] = std::bind(&chip8::op_4XKK_SNE, this, std::placeholders::_1);
     
-    // Categoria 5: SE Vx, Vy (Salto se registri uguali) - Opcode semplice
     operations[0x5] = std::bind(&chip8::op_5XY0_SE, this, std::placeholders::_1);
     
-    // Categoria 6: LD Vx, byte (Carica un valore) - Opcode semplice
     operations[0x6] = std::bind(&chip8::op_6XKK_LD, this, std::placeholders::_1);
     
-    // Categoria 7: ADD Vx, byte (Addizione) - Opcode semplice
     operations[0x7] = std::bind(&chip8::op_7XKK_ADD, this, std::placeholders::_1);
 
-    // Categoria 8: Opcode complessi (Operazioni logiche/aritmetiche su registri)
     operations[0x8] = std::bind(&chip8::handle_category_8, this, std::placeholders::_1);
 
-    // Categoria 9: SNE Vx, Vy (Salto se registri NON uguali) - Opcode semplice
     operations[0x9] = std::bind(&chip8::op_9XY0_SNE, this, std::placeholders::_1);
 
-    // Categoria A (10): LD I, addr (Carica indirizzo) - Opcode semplice
     operations[0xA] = std::bind(&chip8::op_ANNN_LD_I, this, std::placeholders::_1);
 
-    // Categoria B (11): JP V0, addr (Salto con offset) - Opcode semplice
     operations[0xB] = std::bind(&chip8::op_BNNN_JP_V0, this, std::placeholders::_1);
 
-    // Categoria C (12): RND Vx, byte (Genera numero casuale) - Opcode semplice
     operations[0xC] = std::bind(&chip8::op_CXKK_RND, this, std::placeholders::_1);
     
-    // Categoria D (13): DRW Vx, Vy, nibble (Disegna sprite) - Opcode semplice/complesso
     operations[0xD] = std::bind(&chip8::op_DXYN_DRW, this, std::placeholders::_1);
 
-    // Categoria E (14): Opcode complessi (Input/tastiera)
     operations[0xE] = std::bind(&chip8::handle_category_E, this, std::placeholders::_1);
 
-    // Categoria F (15): Opcode complessi (Varie)
     operations[0xF] = std::bind(&chip8::handle_category_F, this, std::placeholders::_1);
     
-    
+   
 }
-chip8::~chip8()
+
+
+
+bool chip8::load(std::string rom)
 {
+    return false;
 }
-
-
-
-bool chip8::load(std::string filename)
-{
-    // 1. Apri il file ROM in modalità binaria
-    std::ifstream file(filename, std::ios::binary | std::ios::ate);
-
-    if (file.is_open())
-    {
-        // 2. Ottieni la dimensione del file
-        // L'utilizzo di ios::ate posiziona il cursore alla fine.
-        std::streampos size = file.tellg();
-        
-        // Verifica la dimensione massima (4096 - 512 = 3584 byte disponibili)
-        if (size > (RAM_SIZE - 0x200)) {
-            std::cerr << "ERRORE: La ROM è troppo grande per la memoria CHIP-8 disponibile." << std::endl;
-            file.close();
-            return false;
-        }
-
-        // 3. Ritorna all'inizio del file
-        file.seekg(0, std::ios::beg);
-
-        // 4. Leggi i dati direttamente nel buffer RAM
-        // Il caricamento inizia all'indirizzo 0x200 (512)
-        if (file.read((char*)&ram[0x200], size))
-        {
-            // 5. Successo: Imposta il Program Counter
-            // L'esecuzione del programma inizia sempre a 0x200
-            pc = 0x200; 
-            
-            file.close();
-            std::cout << "ROM '" << filename << "' caricata con successo (" << size << " byte)." << std::endl;
-            return true;
-        }
-        else
-        {
-            // Errore di lettura
-            std::cerr << "ERRORE: Impossibile leggere il file ROM." << std::endl;
-            file.close();
-            return false;
-        }
-    }
-    else
-    {
-        // Errore di apertura
-        std::cerr << "ERRORE: Impossibile aprire il file ROM '" << filename << "'." << std::endl;
-        return false;
-    }
-}
-
 void chip8::handle_category_0(u_int16_t opc)
 {
 }
@@ -369,9 +307,11 @@ void chip8::op_DXYN_DRW(u_int16_t opc)
 
 void chip8::draw_to_console()
 {
-
+    // Pulisci il terminale prima di disegnare (dipendente dal sistema operativo)
+    // Su Linux/macOS:
     system("clear"); 
 
+    // Oppure stampare molte righe vuote.
 
     std::cout << "------------------------------------------------------------------" << std::endl;
 
