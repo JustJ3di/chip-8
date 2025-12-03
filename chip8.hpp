@@ -10,17 +10,19 @@
 #include <random>
 #include <fstream>
 #include <iostream>
-
+#include <SDL2/SDL.h> // NUOVO: Inclusione di SDL
 
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
 #define NVREG  16
 #define KEYPAD_SIZE 16
-#define DISPLAY_SIZE 2048 //16*32
+
+// Nuove costanti per la gestione del display
+#define DISPLAY_WIDTH 64 
+#define DISPLAY_HEIGHT 32 
+#define DISPLAY_SIZE (DISPLAY_WIDTH * DISPLAY_HEIGHT) 
 
 using opcode = std::function<void(u_int16_t opcode)>;
-
-
 
 class chip8
 {
@@ -64,6 +66,14 @@ private:
         0xF0, 0x80, 0xF0, 0x80, 0x80  //F
     };
 
+    // MEMBRI SDL
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* texture = nullptr;
+    const int WINDOW_SCALE = 10; 
+    const int WINDOW_WIDTH = DISPLAY_WIDTH * WINDOW_SCALE;
+    const int WINDOW_HEIGHT = DISPLAY_HEIGHT * WINDOW_SCALE;
+    
     void handle_category_0(u_int16_t opc);
     void handle_category_8(u_int16_t opc);
     void handle_category_E(u_int16_t opc);
@@ -71,7 +81,7 @@ private:
     void op_1NNN_JP(uint16_t opc);
     void op_2NNN_CALL(u_int16_t opc);
     void op_3XKK_SE(uint16_t opc);
-    void op_6XKK_LD(u_int16_t opc); // 6XKK
+    void op_6XKK_LD(u_int16_t opc); 
     void op_4XKK_SNE(uint16_t opc);
     void op_5XY0_SE(uint16_t opc);
     void op_7XKK_ADD(uint16_t opc);
@@ -85,11 +95,19 @@ public:
     u_int32_t video[DISPLAY_SIZE]{}; //video display
 
     chip8();
-    ~chip8() = default;
+    ~chip8(); 
 
-    bool load(std::string);
+    bool load(std::string filename);
     void emulate_cycle(); //fetch decode execute
-    void draw_to_console();
+    
+    //  SDL
+    bool setup_sdl();
+    void cleanup_sdl();
+    void render_sdl();
+
+    //  KEYPAD
+    void key_down(u_int8_t key_index);
+    void key_up(u_int8_t key_index);
 
 
 };

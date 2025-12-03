@@ -7,7 +7,7 @@
 chip8::chip8()
 {
 
-    pc = 0;
+    //pc = 0;
     opc = 0;
     sp = 0;
     index = 0;
@@ -50,38 +50,131 @@ chip8::chip8()
     
    
 }
+chip8::~chip8() 
+{
+    cleanup_sdl(); 
+}
+
+// ----------------------  SDL ----------------------
+
+bool chip8::setup_sdl()
+{
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "SDL non si è inizializzato! Errore: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    window = SDL_CreateWindow(
+        "CHIP-8 Emulator",
+        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+        WINDOW_WIDTH, WINDOW_HEIGHT,
+        SDL_WINDOW_SHOWN
+    );
+    if (window == nullptr) {
+        std::cerr << "La finestra non è stata creata! Errore: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return false;
+    }
+
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (renderer == nullptr) {
+        std::cerr << "Il Renderer non è stato creato! Errore: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return false;
+    }
+
+    texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_ARGB8888, 
+        SDL_TEXTUREACCESS_STREAMING,
+        DISPLAY_WIDTH, DISPLAY_HEIGHT
+    );
+    if (texture == nullptr) {
+        std::cerr << "La Texture non è stata creata! Errore: " << SDL_GetError() << std::endl;
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return false;
+    }
+    
+    return true;
+}
+
+void chip8::cleanup_sdl()
+{
+    if (texture) SDL_DestroyTexture(texture);
+    if (renderer) SDL_DestroyRenderer(renderer);
+    if (window) SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+void chip8::render_sdl()
+{
+    u_int32_t pixels[DISPLAY_SIZE]; 
+    
+    for (int i = 0; i < DISPLAY_SIZE; ++i) {
+        //mapping
+        if (video[i] == 1) {
+             pixels[i] = 0xFFFFFFFF; 
+        } else {
+             pixels[i] = 0xFF000000; 
+        }
+    }
+
+    SDL_UpdateTexture(
+        texture, 
+        NULL, 
+        pixels, 
+        DISPLAY_WIDTH * sizeof(u_int32_t) 
+    );
+    
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+}
 
 
 
+void chip8::key_down(u_int8_t key_index)
+{
+    if (key_index < KEYPAD_SIZE) { 
+        keypad[key_index] = 1; // 1 = Tasto premuto
+    }
+}
+
+void chip8::key_up(u_int8_t key_index)
+{
+    if (key_index < KEYPAD_SIZE) {
+        keypad[key_index] = 0; // 0 = Tasto rilasciato
+    }
+}
+
+
+//load file
 bool chip8::load(std::string rom)
 {
-    // 1. Apri il file ROM in modalità binaria e posiziona il cursore alla fine (ate)
-    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    std::ifstream file(rom, std::ios::binary | std::ios::ate); 
 
     if (file.is_open())
     {
-        // Ottieni la dimensione del file in byte
         std::streampos size = file.tellg();
         
-        // Verifica che la ROM non sia troppo grande (max 3584 byte, da 0x200 a 0xFFF)
+
         if (size > (RAM_SIZE - 0x200)) {
             std::cerr << "ERRORE: La ROM è troppo grande per la memoria CHIP-8." << std::endl;
             file.close();
             return false;
         }
-
-        // Ritorna all'inizio del file
         file.seekg(0, std::ios::beg);
 
-        // 2. Leggi i dati nel buffer RAM a partire da 0x200
-        // La RAM[0x200] punta all'inizio dell'area del programma
         if (file.read((char*)&ram[0x200], size))
         {
-            // 3. Successo: Imposta il Program Counter (pc)
             pc = 0x200; 
             
             file.close();
-            std::cout << "ROM '" << filename << "' caricata con successo (" << size << " byte)." << std::endl;
+            std::cout << "ROM '" << rom << "' caricata con successo (" << size << " byte)." << std::endl; 
             return true;
         }
         else
@@ -93,25 +186,47 @@ bool chip8::load(std::string rom)
     }
     else
     {
-        std::cerr << "ERRORE: Impossibile aprire il file ROM '" << filename << "'." << std::endl;
+        std::cerr << "ERRORE: Impossibile aprire il file ROM '" << rom << "'." << std::endl; 
         return false;
     }
 }
 void chip8::handle_category_0(u_int16_t opc)
 {
+ 
+    u_int16_t sub_opcode = opc & 0x0FFF;
+    switch (sub_opcode)
+    {
+        case 0x0E0:
+
+            for (int i = 0; i < DISPLAY_SIZE; ++i) {
+                video[i] = 0;
+            }
+
+            break;
+
+        case 0x0EE: 
+
+            pc = stack[sp];
+            
+
+            sp--;
+            break;
+
+        default:
+
+            break;
+    }
 }
 
 void chip8::handle_category_8(uint16_t opc)
 {
-        // Estrai i parametri comuni
-    u_int8_t X = (opc >> 8) & 0xF; // Registro di destinazione/sorgente Vx
-    u_int8_t Y = (opc >> 4) & 0xF; // Registro di sorgente Vy
+    u_int8_t X = (opc >> 8) & 0xF; 
+    u_int8_t Y = (opc >> 4) & 0xF; 
     uint8_t F = 15;
 
-    // Estrai la SOTTOCLASSE (l'ultimo nibble N)
+    
     u_int8_t sub_opcode = opc & 0xF; 
 
-    // Esegui il dispatch (Livello 2)
     switch (sub_opcode) {
         case 0x0: // 8XY0: LD Vx, Vy
             V[X] = V[Y];
@@ -202,8 +317,59 @@ void chip8::handle_category_E(u_int16_t opc)
 
 void chip8::handle_category_F(u_int16_t opc)
 {
-}
+    u_int8_t X = (opc >> 8) & 0xF; 
+    u_int8_t sub_opcode = opc & 0xFF; // Estrae gli ultimi due byte (KK)
 
+    switch (sub_opcode)
+    {
+        case 0x07: // FX07: LD Vx, DT (Set Vx = delay timer value.)
+            V[X] = dl;
+            break;
+
+        case 0x0A: // FX0A: LD Vx, K (Wait for a key press, store the value of the key in Vx.)
+//TODO
+            break; 
+
+        case 0x15: // FX15: LD DT, Vx (Set delay timer = Vx.)
+            dl = V[X];
+            break;
+
+        case 0x18: // FX18: LD ST, Vx (Set sound timer = Vx.)
+            st = V[X];
+            break;
+
+        case 0x1E: 
+            index += V[X];
+            break;
+
+        case 0x29: // FX29: LD F, Vx (Set I = location of sprite for digit Vx.)
+            index = V[X] * 5;
+            break;
+
+        case 0x33: // FX33: LD B, Vx (Store BCD representation of Vx in memory locations I, I+1, and I+2.)
+            ram[index]     = V[X] / 100;        
+            ram[index + 1] = (V[X] / 10) % 10;  
+            ram[index + 2] = V[X] % 10;         
+            break;
+
+        case 0x55: // FX55: LD [I], Vx (Store registers V0 through Vx in memory starting at address I.)
+            for (u_int8_t i = 0; i <= X; ++i) {
+                ram[index + i] = V[i];
+            }
+            break;
+
+        case 0x65: // FX65: LD Vx, [I] (Read registers V0 through Vx from memory starting at address I.)
+            for (u_int8_t i = 0; i <= X; ++i) {
+                V[i] = ram[index + i];
+            }
+            // NOTA: I vecchi interpreti incrementavano I = I + X + 1 dopo questa operazione.
+            break;
+
+        default:
+            // Opcode sconosciuto (puoi aggiungere un messaggio di errore qui)
+            break;
+    }
+}
 void chip8::op_1NNN_JP(uint16_t opc)
 {
     u_int16_t NNN = opc & 0x0FFF;
@@ -296,6 +462,8 @@ void chip8::op_CXKK_RND(uint16_t opc)
     V[X] = random_byte & KK;
 }
 
+// justj3di/chip-8/chip-8-main/chip8.cpp
+
 void chip8::op_DXYN_DRW(u_int16_t opc)
 {
  
@@ -303,31 +471,30 @@ void chip8::op_DXYN_DRW(u_int16_t opc)
     u_int8_t Y = (opc >> 4) & 0x0F;       
     u_int8_t height = opc & 0x0F;         
 
-    //collision flag
+    // Collision flag
     V[0xF] = 0;
-
-    u_int8_t start_x = V[X] % 64; 
-    u_int8_t start_y = V[Y] % 32;
+    u_int8_t start_x = V[X]; 
+    u_int8_t start_y = V[Y];
 
   
     for (int y_line = 0; y_line < height; y_line++)
     {
 
         u_int8_t sprite_byte = ram[index + y_line];
-        u_int8_t current_y = (start_y + y_line) % 32;
         
 
-        if (current_y >= 32) break;
+        u_int8_t current_y = (start_y + y_line) % DISPLAY_HEIGHT;
+        
 
 
         for (int x_bit = 0; x_bit < 8; x_bit++)
         {
             u_int8_t sprite_pixel = (sprite_byte >> (7 - x_bit)) & 0x1;
-            u_int8_t current_x = (start_x + x_bit) % 64;
-            if (current_x >= 64) continue;
-
             
-            int video_index = current_y * 64 + current_x;
+            u_int8_t current_x = (start_x + x_bit) % DISPLAY_WIDTH;
+            
+            
+            int video_index = current_y * DISPLAY_WIDTH + current_x;
             u_int32_t current_screen_pixel = video[video_index];
 
 
@@ -338,46 +505,14 @@ void chip8::op_DXYN_DRW(u_int16_t opc)
                     V[0xF] = 1; 
                 }
 
-                video[video_index] ^= 1; 
+                video[video_index] ^= 1;
                 
             }
         }
     }
 }
 
-void chip8::draw_to_console()
-{
-    // Pulisci il terminale prima di disegnare (dipendente dal sistema operativo)
-    // Su Linux/macOS:
-    system("clear"); 
 
-    // Oppure stampare molte righe vuote.
-
-    std::cout << "------------------------------------------------------------------" << std::endl;
-
-    for (int y = 0; y < 32; y++) // 32 righe
-    {
-        std::cout << "|";
-        for (int x = 0; x < 64; x++) // 64 colonne
-        {
-            // Indice nel buffer 1D: video[y * 64 + x]
-            int index = y * 64 + x;
-
-            if (video[index] == 1) 
-            {
-                // Pixel attivo (usa un carattere pieno o '█')
-                std::cout << "█"; 
-            }
-            else 
-            {
-                // Pixel inattivo (usa uno spazio o '.')
-                std::cout << " "; 
-            }
-        }
-        std::cout << "|" << std::endl;
-    }
-    std::cout << "------------------------------------------------------------------" << std::endl;
-}
 
 void chip8::emulate_cycle()
 {
