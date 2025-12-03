@@ -18,7 +18,6 @@ chip8::chip8()
 
     operations[0x0] = std::bind(&chip8::handle_category_0, this, std::placeholders::_1); 
 
-    // Categoria 1: JP addr (Salto) - Opcode semplice
     operations[0x1] = std::bind(&chip8::op_1NNN_JP, this, std::placeholders::_1); 
     
     // Categoria 2: CALL addr (Chiamata a sottoprogramma) - Opcode semplice
@@ -73,6 +72,9 @@ chip8::~chip8()
 bool chip8::load(std::string rom)
 {
     return false;
+}
+void chip8::handle_category_0(u_int16_t opc)
+{
 }
 
 void chip8::handle_category_8(uint16_t opc)
@@ -144,9 +146,62 @@ void chip8::handle_category_8(uint16_t opc)
     }
 }
 
-void chip8::handle_category_0(uint16_t opc)
+void chip8::handle_category_E(u_int16_t opc)
 {
 }
+
+void chip8::handle_category_F(u_int16_t opc)
+{
+}
+
+void chip8::op_1NNN_JP(uint16_t opc)
+{
+}
+
+void chip8::op_2NNN_CALL(u_int16_t opc)
+{
+}
+
+void chip8::op_3XKK_SE(uint16_t opc)
+{
+}
+
+void chip8::op_6XKK_LD(u_int16_t opc)
+{
+}
+
+void chip8::op_4XKK_SNE(uint16_t opc)
+{
+}
+
+void chip8::op_5XY0_SE(uint16_t opc)
+{
+}
+
+void chip8::op_7XKK_ADD(uint16_t opc)
+{
+}
+
+void chip8::op_9XY0_SNE(uint16_t opc)
+{
+}
+
+void chip8::op_ANNN_LD_I(uint16_t opc)
+{
+}
+
+void chip8::op_BNNN_JP_V0(uint16_t opc)
+{
+}
+
+void chip8::op_CXKK_RND(uint16_t opc)
+{
+}
+
+void chip8::op_DXYN_DRW(uint16_t opc)
+{
+}
+
 
 void chip8::emulate_cycle()
 {

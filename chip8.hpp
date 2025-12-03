@@ -60,11 +60,22 @@ private:
         0xF0, 0x80, 0xF0, 0x80, 0x80  //F
     };
 
-    void handle_category_8(uint16_t opc);
-    void handle_category_0(uint16_t opc);
+    void handle_category_0(u_int16_t opc);
+    void handle_category_8(u_int16_t opc);
+    void handle_category_E(u_int16_t opc);
+    void handle_category_F(u_int16_t opc);
     void op_1NNN_JP(uint16_t opc);
     void op_2NNN_CALL(u_int16_t opc);
     void op_3XKK_SE(uint16_t opc);
+    void op_6XKK_LD(u_int16_t opc); // 6XKK
+    void op_4XKK_SNE(uint16_t opc);
+    void op_5XY0_SE(uint16_t opc);
+    void op_7XKK_ADD(uint16_t opc);
+    void op_9XY0_SNE(uint16_t opc);
+    void op_ANNN_LD_I(uint16_t opc);
+    void op_BNNN_JP_V0(uint16_t opc);
+    void op_CXKK_RND(uint16_t opc);
+    void op_DXYN_DRW(uint16_t opc);
 
 public:
 
