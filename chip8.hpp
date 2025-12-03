@@ -8,7 +8,9 @@
 #include <cstdlib> 
 #include <ctime>
 #include <random>
-#include <SDL2/SDL.h>
+#include <fstream>
+#include <iostream>
+
 
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
@@ -89,8 +91,7 @@ public:
 
     bool load(std::string);
     void emulate_cycle(); //fetch decode execute
-
-    void hil()//hardware in the loop
+    void draw_to_console();
 
 
 };

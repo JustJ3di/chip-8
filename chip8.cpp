@@ -69,10 +69,56 @@ chip8::~chip8()
 }
 
 
-bool chip8::load(std::string rom)
+
+bool chip8::load(std::string filename)
 {
-    return false;
+    // 1. Apri il file ROM in modalità binaria
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    if (file.is_open())
+    {
+        // 2. Ottieni la dimensione del file
+        // L'utilizzo di ios::ate posiziona il cursore alla fine.
+        std::streampos size = file.tellg();
+        
+        // Verifica la dimensione massima (4096 - 512 = 3584 byte disponibili)
+        if (size > (RAM_SIZE - 0x200)) {
+            std::cerr << "ERRORE: La ROM è troppo grande per la memoria CHIP-8 disponibile." << std::endl;
+            file.close();
+            return false;
+        }
+
+        // 3. Ritorna all'inizio del file
+        file.seekg(0, std::ios::beg);
+
+        // 4. Leggi i dati direttamente nel buffer RAM
+        // Il caricamento inizia all'indirizzo 0x200 (512)
+        if (file.read((char*)&ram[0x200], size))
+        {
+            // 5. Successo: Imposta il Program Counter
+            // L'esecuzione del programma inizia sempre a 0x200
+            pc = 0x200; 
+            
+            file.close();
+            std::cout << "ROM '" << filename << "' caricata con successo (" << size << " byte)." << std::endl;
+            return true;
+        }
+        else
+        {
+            // Errore di lettura
+            std::cerr << "ERRORE: Impossibile leggere il file ROM." << std::endl;
+            file.close();
+            return false;
+        }
+    }
+    else
+    {
+        // Errore di apertura
+        std::cerr << "ERRORE: Impossibile aprire il file ROM '" << filename << "'." << std::endl;
+        return false;
+    }
 }
+
 void chip8::handle_category_0(u_int16_t opc)
 {
 }
@@ -139,40 +185,30 @@ void chip8::handle_category_8(uint16_t opc)
         case 0x9:
         break;
     
-        // ... (tutti gli altri opcode 8XYN: SUB, SHR, SUBN, SHL)
         default:
-            // Gestione di opcode non validi (opzionale)
             break;
     }
 }
 
 void chip8::handle_category_E(u_int16_t opc)
 {
-// Estrae l'indice del registro X (Vx)
     u_int8_t X = (opc >> 8) & 0xF; 
-    
-    // Estrae il byte della sottoclasse (KK o N)
-    u_int8_t sub_opcode = opc & 0xFF; 
+        u_int8_t sub_opcode = opc & 0xFF; 
 
-    // Il registro Vx contiene l'indice del tasto da controllare (0x0 a 0xF)
+
     u_int8_t key_index = V[X];
 
     switch (sub_opcode)
     {
-        case 0x9E: // EX9E: SKP Vx (Skip if Key Pressed)
-            // L'istruzione salta l'istruzione successiva (pc += 2) 
-            // SE il tasto il cui indice è memorizzato in Vx è PREMUTO.
-            
-            // L'array keypad[KEYPAD_SIZE] contiene lo stato dei tasti (1 = premuto, 0 = rilasciato)
+        case 0x9E: 
+
             if (keypad[key_index] == 1) 
             {
                 pc += 2;
             }
             break;
 
-        case 0xA1: // EXA1: SKNP Vx (Skip if Key NOT Pressed)
-            // L'istruzione salta l'istruzione successiva (pc += 2) 
-            // SE il tasto il cui indice è memorizzato in Vx NON è premuto.
+        case 0xA1: 
 
             if (keypad[key_index] == 0) 
             {
@@ -181,8 +217,7 @@ void chip8::handle_category_E(u_int16_t opc)
             break;
 
         default:
-            // Gestione di opcode non validi nella categoria E
-            // std::cerr << "Opcode EXXX sconosciuto: " << std::hex << opc << std::endl;
+
             break;
     }
 }
@@ -332,6 +367,37 @@ void chip8::op_DXYN_DRW(u_int16_t opc)
     }
 }
 
+void chip8::draw_to_console()
+{
+
+    system("clear"); 
+
+
+    std::cout << "------------------------------------------------------------------" << std::endl;
+
+    for (int y = 0; y < 32; y++) // 32 righe
+    {
+        std::cout << "|";
+        for (int x = 0; x < 64; x++) // 64 colonne
+        {
+            // Indice nel buffer 1D: video[y * 64 + x]
+            int index = y * 64 + x;
+
+            if (video[index] == 1) 
+            {
+                // Pixel attivo (usa un carattere pieno o '█')
+                std::cout << "█"; 
+            }
+            else 
+            {
+                // Pixel inattivo (usa uno spazio o '.')
+                std::cout << " "; 
+            }
+        }
+        std::cout << "|" << std::endl;
+    }
+    std::cout << "------------------------------------------------------------------" << std::endl;
+}
 
 void chip8::emulate_cycle()
 {
