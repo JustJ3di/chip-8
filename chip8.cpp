@@ -55,7 +55,47 @@ chip8::chip8()
 
 bool chip8::load(std::string rom)
 {
-    return false;
+    // 1. Apri il file ROM in modalità binaria e posiziona il cursore alla fine (ate)
+    std::ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    if (file.is_open())
+    {
+        // Ottieni la dimensione del file in byte
+        std::streampos size = file.tellg();
+        
+        // Verifica che la ROM non sia troppo grande (max 3584 byte, da 0x200 a 0xFFF)
+        if (size > (RAM_SIZE - 0x200)) {
+            std::cerr << "ERRORE: La ROM è troppo grande per la memoria CHIP-8." << std::endl;
+            file.close();
+            return false;
+        }
+
+        // Ritorna all'inizio del file
+        file.seekg(0, std::ios::beg);
+
+        // 2. Leggi i dati nel buffer RAM a partire da 0x200
+        // La RAM[0x200] punta all'inizio dell'area del programma
+        if (file.read((char*)&ram[0x200], size))
+        {
+            // 3. Successo: Imposta il Program Counter (pc)
+            pc = 0x200; 
+            
+            file.close();
+            std::cout << "ROM '" << filename << "' caricata con successo (" << size << " byte)." << std::endl;
+            return true;
+        }
+        else
+        {
+            std::cerr << "ERRORE: Impossibile leggere il file ROM." << std::endl;
+            file.close();
+            return false;
+        }
+    }
+    else
+    {
+        std::cerr << "ERRORE: Impossibile aprire il file ROM '" << filename << "'." << std::endl;
+        return false;
+    }
 }
 void chip8::handle_category_0(u_int16_t opc)
 {

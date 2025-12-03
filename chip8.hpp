@@ -40,8 +40,6 @@ private:
     u_int8_t V[NVREG]{};//register
     u_int8_t rgi{};
     u_int16_t opc; //opcode
-
-    u_int32_t video[DISPLAY_SIZE]{}; //video display
     u_int8_t keypad[KEYPAD_SIZE]{};
     
     std::array<opcode,16>operations;
@@ -84,7 +82,7 @@ private:
     void op_DXYN_DRW(uint16_t opc);
 
 public:
-
+    u_int32_t video[DISPLAY_SIZE]{}; //video display
 
     chip8();
     ~chip8() = default;
