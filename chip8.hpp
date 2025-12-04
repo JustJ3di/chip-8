@@ -10,14 +10,13 @@
 #include <random>
 #include <fstream>
 #include <iostream>
-#include <SDL2/SDL.h> // NUOVO: Inclusione di SDL
+#include <SDL2/SDL.h> 
 
 #define RAM_SIZE 4096
 #define STACK_SIZE 16
 #define NVREG  16
 #define KEYPAD_SIZE 16
 
-// Nuove costanti per la gestione del display
 #define DISPLAY_WIDTH 64 
 #define DISPLAY_HEIGHT 32 
 #define DISPLAY_SIZE (DISPLAY_WIDTH * DISPLAY_HEIGHT) 
@@ -66,7 +65,7 @@ private:
         0xF0, 0x80, 0xF0, 0x80, 0x80  //F
     };
 
-    // MEMBRI SDL
+    //  SDL
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* texture = nullptr;
