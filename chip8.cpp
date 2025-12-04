@@ -362,11 +362,11 @@ void chip8::handle_category_F(u_int16_t opc)
             for (u_int8_t i = 0; i <= X; ++i) {
                 V[i] = ram[index + i];
             }
-            // NOTA: I vecchi interpreti incrementavano I = I + X + 1 dopo questa operazione.
+
             break;
 
         default:
-            // Opcode sconosciuto (puoi aggiungere un messaggio di errore qui)
+           
             break;
     }
 }
